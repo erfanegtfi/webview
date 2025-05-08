@@ -218,12 +218,25 @@ class _WebviewScreenState extends State<WebviewScreen> {
     return urls;
   }
 
-  Future<bool> _onWillPop(BuildContext context) async {
-    List<String> urls = await getUrlHostList();
-    if ((urls.length == 2 && (urls[0].isEmpty == true || urls[1].isEmpty == true)) || (urls.length == 1 && urls[0].isEmpty == true)) {
-      _showExitDialog();
-      return Future.value(true);
+  Future<void> removeEmptyUrls(InAppWebViewController? controller) async {
+    WebHistory? webh = await controller?.getCopyBackForwardList();
+    List<WebHistoryItem> urls = webh?.list ?? [];
+   
+    if (urls.isNotEmpty) {
+      for (int i = urls.length - 1; i >= 0; i--) {
+        // if ((urls[i].url?.host.isEmpty == true || (i != 0 && urls[i - 1].url?.host.isEmpty == true)) ||
+        //     (urls[i].title == "Webpage not available" || (i != 0 && urls[i - 1].title == "Webpage not available"))) {
+        if (i != 0 && (urls[i - 1].url?.host.isEmpty == true || urls[i - 1].title == "Webpage not available")) {
+          if (await webViewController?.canGoBack() == true) await controller?.goBack();
+        } else
+          break;
+      }
     }
+  }
+
+  
+  Future<bool> _onWillPop(BuildContext context) async {
+    await removeEmptyUrls(webViewController);
 
     if (await webViewController?.canGoBack() == true) {
       webViewController?.goBack();
